@@ -1,0 +1,20 @@
+{
+  "name": "np-auto",
+  "version": "1.0.0",
+  "description": "Automated video portal interaction using Playwright",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js"
+  },
+  "dependencies": {
+    "playwright": "^1.40.0",
+    "csv-parser": "^3.0.0",
+    "xlsx": "^0.18.5",
+    "fs": "^0.0.1-security"
+  },
+  "keywords": ["automation", "playwright", "csv", "xlsx"],
+  "author": "",
+  "license": "MIT"
+}
