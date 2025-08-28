@@ -5,17 +5,20 @@ async function readCSVData() {
     try {
         const csvData = readFileSync('videos.csv', 'utf-8');
         const lines = csvData.split('\n').filter(line => line.trim() !== '');
-        const headers = lines[0].split(',');
+        const headers = lines[0].split(/\t|,/); // Split by tabs OR commas
         const results = [];
         
         for (let i = 1; i < lines.length; i++) {
-            const values = lines[i].split(',');
+            const values = lines[i].split(/\t|,/); // Split by tabs OR commas
             const row = {};
             headers.forEach((header, index) => {
                 row[header.trim()] = values[index] ? values[index].trim() : '';
             });
             results.push(row);
         }
+        
+        // Debug: Log the parsed data
+        console.log('📊 Parsed CSV data:', JSON.stringify(results, null, 2));
         
         return results;
     } catch (error) {
@@ -75,17 +78,29 @@ async function processVideo(page, video) {
 
 async function approveVideo(page, video) {
     try {
+        // Check if bow number field already has a value
+        const bowNumberField = page.getByRole('textbox', { name: 'Bow Number Detected Bow' });
+        const currentValue = await bowNumberField.inputValue();
+        
+        if (currentValue && currentValue.trim() !== '') {
+            console.log(`✅ Bow number field already filled with: ${currentValue} - Skipping to approve`);
+        } else {
+            // Click on bow number input field and enter the bow number
+            await bowNumberField.click();
+            await bowNumberField.fill(video.BOWNumber);
+            console.log(`✅ Bow number entered: ${video.BOWNumber}`);
+        }
+        
         // Click Approve button
         await page.getByRole('button', { name: 'Approve' }).click();
         console.log('✅ Approve button clicked');
         
-        // Wait for bow number input field and enter it
+        // Wait for approval to process
         await page.waitForTimeout(1000);
-        // Add bow number input logic here based on your portal structure
         
-        // Click Save
-        await page.getByRole('button', { name: 'Save' }).click();
-        console.log('✅ Video approved successfully');
+        // Close dialog - use specific locator for approve flow
+        await page.locator("//mat-icon[@id='reset_search_icon']").click();
+        console.log('✅ Video approved successfully and dialog closed');
         
     } catch (error) {
         console.error('❌ Error in approve flow:', error);
@@ -114,6 +129,9 @@ async function rejectVideo(page, video) {
                     break;
                 case 'no number':
                     reasonCode = 'Bow number not printed';
+                    break;
+                case 'wrong direction':
+                    reasonCode = 'INVALID DIRECTION';
                     break;
                 default:
                     reasonCode = 'Bow number not visible';
@@ -207,9 +225,13 @@ async function loginToPortal() {
         
         console.log('\n🎉 All videos processed successfully!');
         
-        // Keep browser open for review
-        console.log('Browser will stay open for review. Close it when done.');
-        await new Promise(() => {});
+        // Keep browser open for 1 minute then close automatically
+        console.log('Browser will stay open for 1 minute for review, then close automatically.');
+        await page.waitForTimeout(60000); // Wait 1 minute (60 seconds)
+        
+        console.log('Closing browser automatically...');
+        await browser.close();
+        console.log('✅ Automation completed and browser closed.');
         
     } catch (error) {
         console.error('❌ Error during automation:', error);
